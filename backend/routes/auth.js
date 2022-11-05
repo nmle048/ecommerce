@@ -5,7 +5,70 @@ const User = require('../models/User');
 const CryptoJS = require('crypto-js');
 require('dotenv').config({path: 'backend/.env'});
 
+//PASSPORT CONFIGS
+// passport.use(new LocalStrategy(verify = async (username, password, done) => {
+//     const user = await User.findOne({username: username});
+//     if (!user) return done(null, false, {message: 'Tên đăng nhập hoặc mật khẩu không đúng.'});
 
+//     hashedPassword = CryptoJS.AES.decrypt(
+//         password,
+//         process.env.PASS_SEC
+//     );
+//     if (user.password != hashedPassword) return done(null, false, {message: 'Tên đăng nhập hoặc mật khẩu không đúng.'});
+//     return done(null, user);
+//     })
+// );
+
+// passport.serializeUser((user, done) => {
+//     process.nextTick(() => {
+//         return done(null, user._id);
+//     });
+// });
+  
+// passport.deserializeUser((id, done) => {
+//     User.findOne({_id: id}, (err, user) => {
+//         if (err) return done(null, err);
+//         return done(null, user);
+//     })
+// });
+
+// //SIGN IN
+// router.post('/signin', passport.authenticate('local', {
+//     successReturnToOrRedirect: '/',
+//     failureRedirect: '/signin',
+//     failureMessage: true
+// }));
+
+//SIGN IN
+router.post('/signin', async (req, res) => {
+    try {
+        const user = await User.findOne({username: req.body.username});
+        if (!user) res.status(500).json('Tài khoản hoặc mật khẩu không đúng.');
+        else {
+            const hashedPassword = CryptoJS.AES.decrypt(
+                user.password,
+                process.env.PASS_SEC
+            );
+            if (hashedPassword.toString(CryptoJS.enc.Utf8) != req.body.password) res.status(500).json('Tài khoản hoặc mật khẩu không đúng.');
+            else {
+                req.session.userId = user._id;
+                req.session.save();
+                res.status(200).json('Đăng nhập thành công');
+            }
+        }
+    }
+    catch(err) {
+        res.status(500).json(err);
+    }
+});
+
+//SIGN OUT
+router.get('/signout', async (req, res) => {
+    req.session.destroy();
+    res.status(200).json('Bạn đã đăng xuất');
+})
+
+//SIGN UP
 router.post('/signup', async (req, res) => {
     try {
         const email = await User.findOne({email: req.body.email});
