@@ -39,7 +39,28 @@ require('dotenv').config({path: 'backend/.env'});
 //     failureMessage: true
 // }));
 
-//SIGN IN
+//SIGN IN GET
+router.get('/signin', async (req, res) => {
+    try {
+        if (req.session.userId) {
+            const userId = req.session.userId;
+            const user = await User.findById(userId);
+            if (!user) {
+                req.session.destroy();
+                res.status(500).json('Tài khoản không tồn tại.');
+            }
+            else {
+                res.status(200).json(user.username);
+            }
+        }
+        else res.status(500).json('Chưa đăng nhập.');
+    }
+    catch(err) {
+        res.status(500).json(err);
+    }
+});
+
+//SIGN IN POST
 router.post('/signin', async (req, res) => {
     try {
         const user = await User.findOne({username: req.body.username});
